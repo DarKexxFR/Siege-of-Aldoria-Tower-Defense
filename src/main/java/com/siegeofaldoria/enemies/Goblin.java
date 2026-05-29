@@ -1,9 +1,9 @@
 package com.siegeofaldoria.enemies;
 
-import com.siegeofaldoria.entities.Enemy;
-
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
+
+import com.siegeofaldoria.entities.Enemy;
 
 /**
  * Goblin — fast but fragile. Scouts that slip through gaps.
@@ -13,7 +13,7 @@ public class Goblin extends Enemy {
     public Goblin(List<int[]> path, double boost) {
         super(path);
         name        = "Goblin";
-        maxHp       = (int)(60 * boost);
+        maxHp       = (int)(55 * boost);
         hp          = maxHp;
         speed       = 110 * boost;
         goldReward  = 8;

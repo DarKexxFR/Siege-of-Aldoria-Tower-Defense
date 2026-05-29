@@ -1,15 +1,16 @@
 package com.siegeofaldoria.map;
 
-import com.siegeofaldoria.Game;
-import com.siegeofaldoria.enemies.Dragon;
-import com.siegeofaldoria.enemies.Goblin;
-import com.siegeofaldoria.enemies.Orc;
-import com.siegeofaldoria.enemies.Troll;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+import com.siegeofaldoria.Game;
+import com.siegeofaldoria.enemies.Dragon;
+import com.siegeofaldoria.enemies.Goblin;
+import com.siegeofaldoria.enemies.Orc;
+import com.siegeofaldoria.enemies.Slim;
+import com.siegeofaldoria.enemies.Troll;
 
 /**
  * Manages enemy waves — schedules spawns and tracks wave state.
@@ -51,6 +52,7 @@ public class WaveManager {
         List<int[]> p = new ArrayList<>(path);
         switch (entry.type) {
             case "goblin" -> game.getEnemies().add(new Goblin(p, entry.boost));
+            case "slim"   -> game.getEnemies().add(new Slim(p, entry.boost));
             case "orc"    -> game.getEnemies().add(new Orc(p,  entry.boost));
             case "troll"  -> game.getEnemies().add(new Troll(p, entry.boost));
             case "dragon" -> game.getEnemies().add(new Dragon(p, entry.boost));
@@ -76,9 +78,9 @@ public class WaveManager {
         spawnInterval = Math.max(0.25, 0.6 - wave * 0.03);
 
         switch (wave) {
-            case 1  -> enqueue("goblin", 8,  boost);
-            case 2  -> { enqueue("goblin", 6, boost); enqueue("orc", 3, boost); }
-            case 3  -> { enqueue("goblin", 5, boost); enqueue("orc", 5, boost); }
+            case 1  -> { enqueue("slim", 4, boost); enqueue("goblin", 2, boost); }
+            case 2  -> { enqueue("slim", 6, boost); enqueue("orc", 3, boost);  enqueue("orc", 3, boost);}
+            case 3  -> { enqueue("slim", 7, boost); enqueue("goblin", 5, boost); enqueue("orc", 5, boost); }
             case 4  -> { enqueue("orc", 8, boost); enqueue("troll", 2, boost); }
             case 5  -> { enqueue("goblin", 6, boost); enqueue("orc", 5, boost); enqueue("troll", 3, boost); }
             case 6  -> { enqueue("orc", 6, boost); enqueue("troll", 5, boost); }

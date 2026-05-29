@@ -28,6 +28,27 @@ public class CannonTower extends Tower {
         projType        = ProjectileType.CANNONBALL;
         baseColor       = new Color(80, 80, 80);
         topColor        = new Color(50, 50, 50);
+        specialCooldown    = 15.0;
+        specialName        = "Barrage";
+        specialFlashRadius = 90;
+        specialCost        = 70;
+    }
+
+    @Override
+    protected void triggerSpecial(List<Enemy> enemies, List<Projectile> projectiles) {
+        int count = 0;
+        for (Enemy e : enemies) {
+            if (!e.isAlive()) continue;
+            double dx = e.getX() - getCenterX();
+            double dy = e.getY() - getCenterY();
+            if (Math.sqrt(dx * dx + dy * dy) > range * 1.3) continue;
+            projectiles.add(new Projectile(
+                getCenterX(), getCenterY(), e,
+                projectileSpeed, damage * 2.0,
+                splashRadius * 1.5, 1.0, 0, projType, enemies
+            ));
+            if (++count >= 3) break;
+        }
     }
 
     @Override

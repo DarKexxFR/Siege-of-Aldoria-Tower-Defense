@@ -1,13 +1,19 @@
 package com.siegeofaldoria.ui;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+
 import com.siegeofaldoria.Game;
 import com.siegeofaldoria.GameState;
 import com.siegeofaldoria.entities.Tower;
 import com.siegeofaldoria.towers.ArcherTower;
 import com.siegeofaldoria.towers.CannonTower;
+import com.siegeofaldoria.towers.Caserne;
+import com.siegeofaldoria.towers.DruideTower;
 import com.siegeofaldoria.towers.MageTower;
-
-import java.awt.event.*;
 
 /**
  * Handles all mouse and keyboard input for the game.
@@ -16,15 +22,10 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
 
     private final Game game;
 
-    // Hover tile for placement preview
-    private int hoverCol = -1;
-    private int hoverRow = -1;
-
-    // Which tower type is selected in the shop (null = none)
+    private int    hoverCol          = -1;
+    private int    hoverRow          = -1;
     private String selectedTowerType = null;
-
-    // Tower selected on the map (for sell/upgrade)
-    private Tower selectedTower = null;
+    private Tower  selectedTower     = null;
 
     public InputHandler(Game game) {
         this.game = game;
@@ -36,11 +37,14 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
         int mx = e.getX();
         int my = e.getY();
 
-        // Clicks on the sidebar are handled by TowerShop directly via its own listener
-        if (mx >= Game.TILE_SIZE * Game.MAP_COLS) return;
+        // Level select — clicks anywhere on the map area
+        if (game.getState() == GameState.LEVEL_SELECT) {
+            handleLevelSelectClick(mx, my);
+            return;
+        }
 
-        // Clicks in the HUD bar at the bottom
-        if (my >= Game.TILE_SIZE * Game.MAP_ROWS) return;
+        if (mx >= Game.TILE_SIZE * Game.MAP_COLS) return; // sidebar handled by TowerShop
+        if (my >= Game.TILE_SIZE * Game.MAP_ROWS) return; // HUD bar
 
         int col = mx / Game.TILE_SIZE;
         int row = my / Game.TILE_SIZE;
@@ -48,22 +52,29 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
         if (e.getButton() == MouseEvent.BUTTON1) {
             handleLeftClick(col, row);
         } else if (e.getButton() == MouseEvent.BUTTON3) {
-            handleRightClick(col, row);
+            handleRightClick();
+        }
+    }
+
+    private void handleLevelSelectClick(int mx, int my) {
+        for (int i = 0; i < 3; i++) {
+            int cx = Game.LEVEL_CARD_X0 + i * (Game.LEVEL_CARD_W + Game.LEVEL_CARD_GAP);
+            int cy = Game.LEVEL_CARD_Y;
+            if (mx >= cx && mx <= cx + Game.LEVEL_CARD_W
+                    && my >= cy && my <= cy + Game.LEVEL_CARD_H) {
+                game.selectLevel(i + 1);
+                return;
+            }
         }
     }
 
     private void handleLeftClick(int col, int row) {
         if (selectedTowerType != null) {
-            // Try to place a tower
             Tower t = createTower(selectedTowerType, col, row);
-            if (t != null) {
-                boolean placed = game.placeTower(t);
-                if (!placed) {
-                    // Flash feedback handled by GamePanel
-                }
+            if (t != null && game.placeTower(t)) {
+                selectedTowerType = null; // auto-deselect after placement
             }
         } else {
-            // Select/deselect tower on map
             deselectAll();
             for (Tower t : game.getTowers()) {
                 if (t.getCol() == col && t.getRow() == row) {
@@ -75,8 +86,7 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
         }
     }
 
-    private void handleRightClick(int col, int row) {
-        // Right-click deselects placement mode or tower
+    private void handleRightClick() {
         selectedTowerType = null;
         deselectAll();
     }
@@ -88,10 +98,12 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
 
     private Tower createTower(String type, int col, int row) {
         return switch (type) {
-            case "archer" -> new ArcherTower(col, row);
-            case "mage"   -> new MageTower(col, row);
-            case "cannon" -> new CannonTower(col, row);
-            default       -> null;
+            case "archer"  -> new ArcherTower(col, row);
+            case "druide"  -> new DruideTower(col, row);
+            case "mage"    -> new MageTower(col, row);
+            case "cannon"  -> new CannonTower(col, row);
+            case "caserne" -> new Caserne(col, row);
+            default        -> null;
         };
     }
 
@@ -113,37 +125,45 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_SPACE -> {
-                if (game.getState() == GameState.PLAYING || game.getState() == GameState.PAUSED) {
-                    game.togglePause();
-                } else if (game.getState() == GameState.MENU
-                        || game.getState() == GameState.WAVE_COMPLETE) {
-                    game.startNextWave();
+                switch (game.getState()) {
+                    case MENU          -> game.goToLevelSelect();
+                    case PLAYING, PAUSED -> game.togglePause();
+                    case PREP, WAVE_COMPLETE -> game.startNextWave();
+                    default -> {}
                 }
             }
             case KeyEvent.VK_1 -> selectedTowerType = "archer";
-            case KeyEvent.VK_2 -> selectedTowerType = "mage";
-            case KeyEvent.VK_3 -> selectedTowerType = "cannon";
+            case KeyEvent.VK_2 -> selectedTowerType = "druide";
+            case KeyEvent.VK_3 -> selectedTowerType = "mage";
+            case KeyEvent.VK_4 -> selectedTowerType = "cannon";
+            case KeyEvent.VK_5 -> selectedTowerType = "caserne";
             case KeyEvent.VK_ESCAPE -> {
-                selectedTowerType = null;
-                deselectAll();
+                if (game.getState() == GameState.LEVEL_SELECT) {
+                    game.setState(GameState.MENU);
+                } else {
+                    selectedTowerType = null;
+                    deselectAll();
+                }
             }
             case KeyEvent.VK_S -> {
-                // Sell selected tower
                 if (selectedTower != null) {
                     game.sellTower(selectedTower);
                     selectedTower = null;
                 }
             }
             case KeyEvent.VK_U -> {
-                // Upgrade selected tower
                 if (selectedTower != null && selectedTower.canUpgrade()) {
-                    int cost = selectedTower.getUpgradeCost();
-                    if (game.getGold() >= cost) {
-                        // Gold deduction handled externally — invoke via game method
-                        // For now direct upgrade (game.upgradeTower would be cleaner)
+                    if (game.getGold() >= selectedTower.getUpgradeCost()) {
+                        game.spendGold(selectedTower.getUpgradeCost());
                         selectedTower.upgrade();
                     }
                 }
+            }
+            case KeyEvent.VK_A -> {
+                if (selectedTower != null) game.buySpecial(selectedTower);
+            }
+            case KeyEvent.VK_X -> {
+                if (game.getState() == GameState.PLAYING) game.cycleSpeed();
             }
             case KeyEvent.VK_R -> {
                 if (game.getState() == GameState.GAME_OVER
@@ -163,10 +183,10 @@ public class InputHandler implements MouseListener, MouseMotionListener, KeyList
     @Override public void keyReleased(KeyEvent e)     {}
     @Override public void keyTyped(KeyEvent e)        {}
 
-    // ── Getters for GamePanel ──────────────────────────────────────────────
-    public int    getHoverCol()           { return hoverCol; }
-    public int    getHoverRow()           { return hoverRow; }
-    public String getSelectedTowerType()  { return selectedTowerType; }
-    public Tower  getSelectedTower()      { return selectedTower; }
+    // ── Getters ────────────────────────────────────────────────────────────
+    public int    getHoverCol()          { return hoverCol; }
+    public int    getHoverRow()          { return hoverRow; }
+    public String getSelectedTowerType() { return selectedTowerType; }
+    public Tower  getSelectedTower()     { return selectedTower; }
     public void   setSelectedTowerType(String t) { selectedTowerType = t; deselectAll(); }
 }

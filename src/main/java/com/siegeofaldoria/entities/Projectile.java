@@ -1,6 +1,7 @@
 package com.siegeofaldoria.entities;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public class Projectile {
 
-    public enum ProjectileType { ARROW, MAGIC_BOLT, CANNONBALL }
+    public enum ProjectileType { ARROW, MAGIC_BOLT, CANNONBALL, DRUID_VINES }
 
     private double x, y;
     private double snapTargetX, snapTargetY;
@@ -56,10 +57,11 @@ public class Projectile {
         this.splashTargets = splashTargets;
 
         switch (type) {
-            case ARROW      -> { color = new Color(200, 160, 60); drawRadius = 5; }
-            case MAGIC_BOLT -> { color = new Color(140, 80, 220); drawRadius = 7; }
-            case CANNONBALL -> { color = new Color(60, 60, 60);   drawRadius = 9; }
-            default         -> { color = Color.WHITE;             drawRadius = 5; }
+            case ARROW       -> { color = new Color(200, 160, 60); drawRadius = 5; }
+            case MAGIC_BOLT  -> { color = new Color(140, 80, 220); drawRadius = 7; }
+            case CANNONBALL  -> { color = new Color(60, 60, 60);   drawRadius = 9; }
+            case DRUID_VINES -> { color = new Color(70, 250, 130); drawRadius = 9; }
+            default          -> { color = Color.WHITE;             drawRadius = 5; }
         }
     }
 

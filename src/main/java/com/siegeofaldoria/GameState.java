@@ -5,6 +5,8 @@ package com.siegeofaldoria;
  */
 public enum GameState {
     MENU,
+    LEVEL_SELECT,
+    PREP,
     PLAYING,
     PAUSED,
     WAVE_COMPLETE,

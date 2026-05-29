@@ -1,13 +1,18 @@
 package com.siegeofaldoria.towers;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.util.List;
+
+import com.siegeofaldoria.entities.Enemy;
+import com.siegeofaldoria.entities.Projectile;
 import com.siegeofaldoria.entities.Projectile.ProjectileType;
 import com.siegeofaldoria.entities.Tower;
-
-import java.awt.*;
 
 /**
  * Mage Tower — slows enemies and deals magic damage. Moderate cost.
  * Cost: 100 gold | Range: 160px | Damage: 30 | Rate: 0.9/s | Slow: 50% for 2s
+ * Lvl3 special: Nova — ralentit TOUS les ennemis à 30% pendant 3s (18s)
  */
 public class MageTower extends Tower {
 
@@ -25,12 +30,22 @@ public class MageTower extends Tower {
         projType        = ProjectileType.MAGIC_BOLT;
         baseColor       = new Color(70, 50, 130);
         topColor        = new Color(140, 100, 220);
+        specialCooldown    = 18.0;
+        specialName        = "Nova";
+        specialFlashRadius = 180;
+        specialCost        = 60;
+    }
+
+    @Override
+    protected void triggerSpecial(List<Enemy> enemies, List<Projectile> projectiles) {
+        for (Enemy e : enemies) {
+            if (e.isAlive()) e.applySlow(0.3, 3.0);
+        }
     }
 
     @Override
     public void draw(Graphics2D g2) {
         super.draw(g2);
-        // Magic aura pulsing ring
         int px = col * com.siegeofaldoria.Game.TILE_SIZE;
         int py = row * com.siegeofaldoria.Game.TILE_SIZE;
         int ts = com.siegeofaldoria.Game.TILE_SIZE;

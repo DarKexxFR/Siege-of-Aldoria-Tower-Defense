@@ -33,6 +33,15 @@ public abstract class Tower {
     protected double fireCooldown = 0;
     protected boolean selected = false;
 
+    // ── Special ability ────────────────────────────────────────────────────
+    protected double  specialCooldown    = 0;   // 0 = pas de timer (passif)
+    protected double  specialTimer       = 0;
+    protected double  specialFlash       = 0;
+    protected String  specialName        = "";
+    protected double  specialFlashRadius = 70;
+    protected boolean specialUnlocked    = false;
+    protected int     specialCost        = 0;
+
     public Tower(int col, int row) {
         this.col = col;
         this.row = row;
@@ -47,7 +56,24 @@ public abstract class Tower {
             shoot(target, enemies, projectiles);
             fireCooldown = 1.0 / fireRate;
         }
+
+        if (specialCooldown > 0 && specialUnlocked) {
+            if (specialFlash > 0) specialFlash -= dt;
+            if (specialTimer > 0) {
+                specialTimer -= dt;
+            } else {
+                boolean hasEnemies = false;
+                for (Enemy e : enemies) { if (e.isAlive()) { hasEnemies = true; break; } }
+                if (hasEnemies) {
+                    triggerSpecial(enemies, projectiles);
+                    specialTimer = specialCooldown;
+                    specialFlash = 0.5;
+                }
+            }
+        }
     }
+
+    protected void triggerSpecial(List<Enemy> enemies, List<Projectile> projectiles) {}
 
     protected Enemy acquireTarget(List<Enemy> enemies) {
         double cx = getCenterX();
@@ -114,6 +140,37 @@ public abstract class Tower {
             g2.drawOval((int)(getCenterX() - range), (int)(getCenterY() - range),
                         (int)(range * 2), (int)(range * 2));
         }
+
+        if (specialCooldown > 0 && specialUnlocked) {
+            int cx = (int) getCenterX();
+            int cy = (int) getCenterY();
+
+            // Anneau d'expansion à l'activation
+            if (specialFlash > 0) {
+                float ft = 1.0f - (float)(specialFlash / 0.5);
+                int r = 22 + (int)(ft * specialFlashRadius);
+                int alpha = Math.min(255, (int)((specialFlash / 0.5) * 210));
+                g2.setColor(new Color(topColor.getRed(), topColor.getGreen(), topColor.getBlue(), alpha));
+                g2.setStroke(new BasicStroke(3f));
+                g2.drawOval(cx - r, cy - r, r * 2, r * 2);
+                if (r > 35) {
+                    g2.setColor(new Color(255, 255, 255, alpha / 3));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawOval(cx - r + 12, cy - r + 12, (r - 12) * 2, (r - 12) * 2);
+                }
+            }
+
+            // Barre de recharge sous la tour
+            int bx  = col * Game.TILE_SIZE + 4;
+            int by  = row * Game.TILE_SIZE + Game.TILE_SIZE - 5;
+            int barW = Game.TILE_SIZE - 8;
+            double prog = 1.0 - Math.max(0, specialTimer) / specialCooldown;
+            g2.setColor(new Color(20, 20, 20, 200));
+            g2.fillRect(bx, by, barW, 4);
+            Color barCol = specialTimer <= 0 ? new Color(80, 255, 80) : topColor;
+            g2.setColor(barCol);
+            g2.fillRect(bx, by, (int)(barW * Math.min(1.0, prog)), 4);
+        }
     }
 
     /** Draw range circle when hovering during placement. */
@@ -135,9 +192,14 @@ public abstract class Tower {
     public void upgrade() {
         if (!canUpgrade()) return;
         level++;
-        damage       *= 1.4;
-        range        *= 1.1;
-        fireRate     *= 1.15;
+        damage   *= 1.4;
+        range    *= 1.1;
+        fireRate *= 1.15;
+    }
+
+    public void unlockSpecial() {
+        specialUnlocked = true;
+        if (specialCooldown > 0) specialTimer = specialCooldown;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -145,13 +207,26 @@ public abstract class Tower {
     public double getCenterY() { return row * Game.TILE_SIZE + Game.TILE_SIZE / 2.0; }
 
     // ── Getters / Setters ──────────────────────────────────────────────────
-    public int getCol()         { return col; }
-    public int getRow()         { return row; }
-    public int getCost()        { return cost; }
-    public int getSellValue()   { return (int)(cost * 0.6 * level); }
-    public double getRange()    { return range; }
-    public int getLevel()       { return level; }
-    public String getName()     { return name; }
-    public boolean isSelected() { return selected; }
+    public int    getCol()          { return col; }
+    public int    getRow()          { return row; }
+    public int    getCost()         { return cost; }
+    public int    getSellValue()    { return (int)(cost * 0.6 * level); }
+    public double getRange()        { return range; }
+    public double getDamage()       { return damage; }
+    public double getFireRate()     { return fireRate; }
+    public double getSplashRadius() { return splashRadius; }
+    public double getSlowFactor()   { return slowFactor; }
+    public double getSlowDuration() { return slowDuration; }
+    public Color  getBaseColor()    { return baseColor; }
+    public Color  getTopColor()     { return topColor; }
+    public int    getLevel()        { return level; }
+    public String getName()         { return name; }
+    public boolean isSelected()     { return selected; }
     public void setSelected(boolean s) { this.selected = s; }
+
+    public double  getSpecialCooldown()  { return specialCooldown; }
+    public double  getSpecialTimer()     { return Math.max(0, specialTimer); }
+    public String  getSpecialName()      { return specialName; }
+    public boolean isSpecialUnlocked()   { return specialUnlocked; }
+    public int     getSpecialCost()      { return specialCost; }
 }

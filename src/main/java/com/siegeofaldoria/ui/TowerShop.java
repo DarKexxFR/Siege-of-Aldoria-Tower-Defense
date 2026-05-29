@@ -1,11 +1,13 @@
 package com.siegeofaldoria.ui;
 
-import com.siegeofaldoria.Game;
-import com.siegeofaldoria.entities.Tower;
-
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+
+import com.siegeofaldoria.Game;
 
 /**
  * Sidebar panel showing purchasable towers with cost and description.
@@ -20,12 +22,16 @@ public class TowerShop implements MouseListener {
     private final int          sidebarX;
 
     private static final ShopItem[] ITEMS = {
-        new ShopItem("archer", "Archer Tower",  60,  "Fast · Single target",
+        new ShopItem("archer",  "Archer Tower",   60,  "Rapide · Cible unique",
                      new Color(130, 100, 50),  new Color(200, 170, 80)),
-        new ShopItem("mage",   "Mage Tower",   100,  "Slows · Magic dmg",
+        new ShopItem("druide",  "Druide Tower",   90,  "Lianes · Ralentit AoE",
+                     new Color(70, 250, 130),  new Color(90, 230, 20)),
+        new ShopItem("mage",    "Mage Tower",    100,  "Magie · Ralentit",
                      new Color(70, 50, 130),   new Color(140, 100, 220)),
-        new ShopItem("cannon", "Cannon Tower", 130,  "AoE splash · Slow rate",
+        new ShopItem("cannon",  "Cannon Tower",  130,  "AoE · Lent mais puissant",
                      new Color(80, 80, 80),    new Color(50, 50, 50)),
+        new ShopItem("caserne", "Caserne",       110,  "Invoque des soldats",
+                     new Color(110, 80, 40),   new Color(180, 140, 70)),
     };
 
     public TowerShop(Game game, InputHandler input) {
@@ -62,12 +68,10 @@ public class TowerShop implements MouseListener {
         // Hotkey hint
         g2.setColor(new Color(120, 100, 80));
         g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        g2.drawString("[1] [2] [3] select · [ESC] cancel", x + 6, 46 + ITEMS.length * (ITEM_H + 6) + 14);
-        g2.drawString("[S] sell · [U] upgrade · [R] restart", x + 6, 46 + ITEMS.length * (ITEM_H + 6) + 28);
+        g2.drawString("[1]-[5] select  [ESC] annuler", x + 6, 46 + ITEMS.length * (ITEM_H + 6) + 14);
+        g2.drawString("[U] upgrade  [S] vendre", x + 6, 46 + ITEMS.length * (ITEM_H + 6) + 28);
+        g2.drawString("[A] acheter capacite  [R] restart", x + 6, 46 + ITEMS.length * (ITEM_H + 6) + 42);
 
-        // Selected tower info panel
-        Tower sel = input.getSelectedTower();
-        if (sel != null) drawTowerInfo(g2, sel, x, w, h);
     }
 
     private void drawItem(Graphics2D g2, ShopItem item, int x, int y) {
@@ -109,42 +113,6 @@ public class TowerShop implements MouseListener {
         g2.setColor(canAfford ? new Color(255, 215, 0) : new Color(160, 80, 80));
         g2.setFont(new Font("SansSerif", Font.BOLD, 11));
         g2.drawString("⬡ " + item.cost, x + PADDING + 44, y + 50);
-    }
-
-    private void drawTowerInfo(Graphics2D g2, Tower sel, int x, int w, int totalH) {
-        int panelY = totalH - 160;
-        int panelH = 155;
-
-        g2.setColor(new Color(25, 20, 15, 230));
-        g2.fillRoundRect(x + 4, panelY, w - 8, panelH, 10, 10);
-        g2.setColor(new Color(80, 60, 40));
-        g2.setStroke(new BasicStroke(1.5f));
-        g2.drawRoundRect(x + 4, panelY, w - 8, panelH, 10, 10);
-
-        g2.setColor(new Color(230, 190, 100));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-        g2.drawString(sel.getName() + " (Lv." + sel.getLevel() + ")", x + 12, panelY + 20);
-
-        g2.setColor(new Color(190, 170, 130));
-        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        g2.drawString("Range:  " + (int) sel.getRange() + " px", x + 12, panelY + 40);
-
-        g2.setColor(new Color(255, 215, 0));
-        g2.drawString("Sell:   ⬡ " + sel.getSellValue(), x + 12, panelY + 58);
-
-        if (sel.canUpgrade()) {
-            g2.setColor(game.getGold() >= sel.getUpgradeCost()
-                        ? new Color(100, 220, 100) : new Color(180, 80, 80));
-            g2.drawString("Upgrade: ⬡ " + sel.getUpgradeCost() + "  [U]", x + 12, panelY + 76);
-        } else {
-            g2.setColor(new Color(130, 120, 100));
-            g2.drawString("MAX LEVEL", x + 12, panelY + 76);
-        }
-
-        g2.setColor(new Color(200, 80, 80));
-        g2.drawString("[S] Sell tower", x + 12, panelY + 100);
-        g2.setColor(new Color(120, 100, 80));
-        g2.drawString("[ESC] Deselect", x + 12, panelY + 118);
     }
 
     // ── Mouse (shop clicks) ────────────────────────────────────────────────

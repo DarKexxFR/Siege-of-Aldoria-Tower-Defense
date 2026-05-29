@@ -9,12 +9,12 @@ import java.util.List;
 
 /**
  * Holds the grid of tiles and the enemy path.
- * Layout: 20 cols × 14 rows. Path winds across the map.
+ * Layout: 20 cols × 14 rows. Three levels with different paths.
  */
 public class GameMap {
 
-    private final Tile[][]  grid;
-    private final List<int[]> path; // ordered [col, row] waypoints
+    private final Tile[][]    grid;
+    private final List<int[]> path;
 
     // Colours
     private static final Color C_GRASS  = new Color(86, 130, 58);
@@ -24,33 +24,59 @@ public class GameMap {
     private static final Color C_STONE  = new Color(130, 120, 115);
     private static final Color C_WATER  = new Color(70, 130, 180);
 
-    public GameMap() {
+    public GameMap(int level) {
         grid = new Tile[Game.MAP_ROWS][Game.MAP_COLS];
-        path = buildPath();
-        initGrid();
+        path = buildPath(level);
+        initGrid(level);
     }
 
-    // ── Path definition ────────────────────────────────────────────────────
-    /**
-     * Defines the winding path as a sequence of [col, row] waypoints.
-     * Enemies enter from the left and exit to the right.
-     */
-    private List<int[]> buildPath() {
+    // ── Path definitions ───────────────────────────────────────────────────
+    private List<int[]> buildPath(int level) {
+        return switch (level) {
+            case 2  -> buildPathLevel2();
+            case 3  -> buildPathLevel3();
+            default -> buildPathLevel1();
+        };
+    }
+
+    /** Level 1 — Foret d'Aldoria : chemin simple en S */
+    private List<int[]> buildPathLevel1() {
         List<int[]> p = new ArrayList<>();
-        // Entry from left edge, row 2
-        for (int c = 0; c <= 4; c++)  p.add(new int[]{c, 2});
-        // Turn down
-        for (int r = 2; r <= 6; r++)  p.add(new int[]{4, r});
-        // Turn right
-        for (int c = 4; c <= 10; c++) p.add(new int[]{c, 6});
-        // Turn up
-        for (int r = 6; r >= 2; r--)  p.add(new int[]{10, r});
-        // Turn right
+        for (int c = 0; c <= 4; c++)   p.add(new int[]{c, 2});
+        for (int r = 2; r <= 6; r++)   p.add(new int[]{4, r});
+        for (int c = 4; c <= 10; c++)  p.add(new int[]{c, 6});
+        for (int r = 6; r >= 2; r--)   p.add(new int[]{10, r});
         for (int c = 10; c <= 15; c++) p.add(new int[]{c, 2});
-        // Turn down
-        for (int r = 2; r <= 11; r++) p.add(new int[]{15, r});
-        // Turn right to exit
+        for (int r = 2; r <= 11; r++)  p.add(new int[]{15, r});
         for (int c = 15; c < Game.MAP_COLS; c++) p.add(new int[]{c, 11});
+        return deduplicate(p);
+    }
+
+    /** Level 2 — Desert Brulant : entree par le bas, serpentin vertical */
+    private List<int[]> buildPathLevel2() {
+        List<int[]> p = new ArrayList<>();
+        for (int c = 0; c <= 3; c++)   p.add(new int[]{c, 12});
+        for (int r = 12; r >= 3; r--)  p.add(new int[]{3, r});
+        for (int c = 3; c <= 11; c++)  p.add(new int[]{c, 3});
+        for (int r = 3; r <= 10; r++)  p.add(new int[]{11, r});
+        for (int c = 11; c <= 16; c++) p.add(new int[]{c, 10});
+        for (int r = 10; r >= 2; r--)  p.add(new int[]{16, r});
+        for (int c = 16; c < Game.MAP_COLS; c++) p.add(new int[]{c, 2});
+        return deduplicate(p);
+    }
+
+    /** Level 3 — Forteresse : zigzag complexe */
+    private List<int[]> buildPathLevel3() {
+        List<int[]> p = new ArrayList<>();
+        for (int c = 0; c <= 4; c++)   p.add(new int[]{c, 6});
+        for (int r = 6; r >= 1; r--)   p.add(new int[]{4, r});
+        for (int c = 4; c <= 9; c++)   p.add(new int[]{c, 1});
+        for (int r = 1; r <= 11; r++)  p.add(new int[]{9, r});
+        for (int c = 9; c <= 14; c++)  p.add(new int[]{c, 11});
+        for (int r = 11; r >= 3; r--)  p.add(new int[]{14, r});
+        for (int c = 14; c <= 18; c++) p.add(new int[]{c, 3});
+        for (int r = 3; r <= 10; r++)  p.add(new int[]{18, r});
+        for (int c = 18; c < Game.MAP_COLS; c++) p.add(new int[]{c, 10});
         return deduplicate(p);
     }
 
@@ -65,29 +91,37 @@ public class GameMap {
     }
 
     // ── Grid init ──────────────────────────────────────────────────────────
-    private void initGrid() {
-        // Fill all with grass
+    private void initGrid(int level) {
         for (int r = 0; r < Game.MAP_ROWS; r++)
             for (int c = 0; c < Game.MAP_COLS; c++)
                 grid[r][c] = new Tile(TileType.GRASS);
 
-        // Mark path tiles
         for (int[] wp : path)
             grid[wp[1]][wp[0]] = new Tile(TileType.PATH);
 
-        // Add some stone decorations
-        int[][] stones = {
-            {1,5},{2,5},{3,8},{7,3},{8,10},{12,4},{13,9},{17,5},{18,8}
-        };
+        int[][] stones;
+        int[][] waters;
+
+        switch (level) {
+            case 2 -> {
+                stones = new int[][]{{1,7},{2,7},{5,5},{6,8},{8,6},{13,5},{14,8},{18,5},{19,7}};
+                waters = new int[][]{{0,2},{0,3},{1,2},{1,3},{17,12},{18,12},{19,12},{5,11},{6,12}};
+            }
+            case 3 -> {
+                stones = new int[][]{{2,3},{2,9},{6,4},{7,9},{11,4},{12,8},{15,5},{16,8},{1,12}};
+                waters = new int[][]{{0,3},{0,4},{1,4},{7,6},{8,6},{11,7},{16,6},{17,11},{18,12}};
+            }
+            default -> {
+                stones = new int[][]{{1,5},{2,5},{3,8},{7,3},{8,10},{12,4},{13,9},{17,5},{18,8}};
+                waters = new int[][]{{0,8},{0,9},{1,8},{1,9},{18,1},{19,1},{18,2},{6,11},{7,12}};
+            }
+        }
+
         for (int[] s : stones)
             if (s[1] < Game.MAP_ROWS && s[0] < Game.MAP_COLS
                     && grid[s[1]][s[0]].getType() == TileType.GRASS)
                 grid[s[1]][s[0]] = new Tile(TileType.STONE);
 
-        // Add water patches
-        int[][] waters = {
-            {0,8},{0,9},{1,8},{1,9},{18,1},{19,1},{18,2},{6,11},{7,12}
-        };
         for (int[] w : waters)
             if (w[1] < Game.MAP_ROWS && w[0] < Game.MAP_COLS
                     && grid[w[1]][w[0]].getType() == TileType.GRASS)
@@ -113,7 +147,6 @@ public class GameMap {
                         Color pc = ((r + c) % 2 == 0) ? C_PATH : C_PATH2;
                         g2.setColor(pc);
                         g2.fillRect(px, py, ts, ts);
-                        // Subtle edge lines
                         g2.setColor(new Color(0, 0, 0, 20));
                         g2.drawRect(px, py, ts - 1, ts - 1);
                     }
@@ -134,7 +167,6 @@ public class GameMap {
                     }
                 }
 
-                // Grid lines on grass
                 if (tile.getType() == TileType.GRASS) {
                     g2.setColor(new Color(0, 0, 0, 18));
                     g2.drawRect(px, py, ts - 1, ts - 1);

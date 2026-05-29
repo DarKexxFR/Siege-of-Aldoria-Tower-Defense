@@ -6,10 +6,10 @@ package com.siegeofaldoria.map;
 public class Tile {
 
     public enum TileType {
-        GRASS,   // buildable
-        PATH,    // enemy path – not buildable
-        STONE,   // decorative – not buildable
-        WATER    // decorative – not buildable
+        GRASS,  // buildable
+        PATH,   // enemy path – not buildable
+        STONE,  // decorative – not buildable
+        WATER   // decorative – not buildable
     }
 
     private TileType type;
